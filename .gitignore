@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+data/
+workspaces/
+*.log
+.DS_Store
+dashboard/node_modules/
+dashboard/dist/
+.pnpm-store/
+.qoder/

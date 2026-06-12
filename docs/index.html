@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcClaw Docs</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --sidebar-bg: #fff; --text: #1a1a2e; --text2: #555;
+    --border: #e8eaed; --accent: #4f46e5; --accent-bg: #eef2ff;
+    --code-bg: #f1f3f5; --table-stripe: #f8f9fa; --radius: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d0d12; --sidebar-bg: #12121a; --text: #e4e4ed; --text2: #9090a0;
+      --border: #252530; --accent: #818cf8; --accent-bg: #1e1b4b;
+      --code-bg: #1a1a24; --table-stripe: #14141e;
+    }
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased;
+  }
+  .layout{display:flex;min-height:100vh}
+
+  /* Sidebar */
+  .sidebar{
+    width:240px;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;
+    background:var(--sidebar-bg);border-right:1px solid var(--border);
+    padding:24px 20px;overflow-y:auto;z-index:10;
+    display:flex;flex-direction:column;
+  }
+  .sidebar-logo{font-size:1.15rem;font-weight:700;letter-spacing:-0.01em;margin-bottom:4px}
+  .sidebar-logo span{color:var(--accent)}
+  .sidebar-sub{font-size:0.75rem;color:var(--text2);margin-bottom:20px}
+
+  /* Lang toggle */
+  .lang-toggle{
+    display:flex;gap:4px;margin-bottom:20px;background:var(--code-bg);
+    border-radius:8px;padding:3px;
+  }
+  .lang-toggle button{
+    flex:1;border:none;background:none;padding:6px 0;border-radius:6px;
+    font-size:0.8rem;font-weight:600;cursor:pointer;color:var(--text2);
+    transition:background .15s,color .15s;
+  }
+  .lang-toggle button.active{background:var(--sidebar-bg);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+  .sidebar-nav{display:flex;flex-direction:column;gap:2px;flex:1}
+  .sidebar-nav a{
+    display:block;padding:7px 12px;border-radius:6px;
+    font-size:0.85rem;font-weight:500;color:var(--text2);text-decoration:none;
+    transition:background .15s,color .15s;
+  }
+  .sidebar-nav a:hover{background:var(--accent-bg);color:var(--accent)}
+  .sidebar-nav a.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
+
+  /* Main */
+  .main{margin-left:240px;flex:1;padding:48px 56px 80px;max-width:920px}
+  .main h1{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .main h2{font-size:1.22rem;font-weight:650;margin:40px 0 14px;letter-spacing:-0.01em}
+  .main h3{font-size:1rem;font-weight:600;margin:26px 0 10px}
+  .main p{margin-bottom:12px;color:var(--text2);font-size:0.94rem}
+  .main section{margin-bottom:56px}
+
+  pre{
+    background:var(--code-bg);border-radius:var(--radius);padding:16px 20px;
+    overflow-x:auto;font-size:0.82rem;line-height:1.55;margin:12px 0 18px;
+    border:1px solid var(--border);
+  }
+  pre code{font-family:"SF Mono","Fira Code","Cascadia Code",monospace;color:var(--text)}
+  code{
+    font-family:"SF Mono","Fira Code","Cascadia Code",monospace;
+    font-size:0.86em;background:var(--code-bg);padding:1px 6px;border-radius:4px;color:var(--accent);
+  }
+  pre code{background:none;padding:0;border-radius:0;color:var(--text);font-size:inherit}
+
+  table{width:100%;border-collapse:collapse;font-size:0.86rem;margin:12px 0 18px}
+  th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--border)}
+  th{font-weight:600;font-size:0.78rem;color:var(--text2);text-transform:uppercase;letter-spacing:.03em}
+  tr:nth-child(even) td{background:var(--table-stripe)}
+  td code{font-size:0.84em}
+
+  ul,ol{margin:8px 0 14px 20px;color:var(--text2);font-size:0.94rem}
+  li{margin-bottom:4px}
+
+  .badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.72rem;font-weight:600}
+  .badge-get{background:#dcfce7;color:#166534}
+  .badge-post{background:#fef9c3;color:#854d0e}
+  .badge-patch{background:#dbeafe;color:#1e40af}
+  @media(prefers-color-scheme:dark){
+    .badge-get{background:#14532d33;color:#4ade80}
+    .badge-post{background:#713f1233;color:#facc15}
+    .badge-patch{background:#1e3a5f33;color:#60a5fa}
+  }
+
+  .api-endpoint{display:flex;align-items:center;gap:10px;margin:16px 0 6px}
+  .api-endpoint .path{font-family:"SF Mono",monospace;font-size:0.9rem;font-weight:600}
+
+  /* Language visibility */
+  [data-lang]{display:none}
+  [data-lang].show{display:revert}
+
+  @media(max-width:768px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:32px 20px}
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">Arc<span>Claw</span></div>
+  <div class="sidebar-sub" data-lang="en">Documentation</div>
+  <div class="sidebar-sub" data-lang="zh">文档</div>
+
+  <div class="lang-toggle">
+    <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+    <button id="btn-zh" onclick="setLang('zh')">中文</button>
+  </div>
+
+  <div class="sidebar-nav">
+    <a href="#overview" data-nav="overview"><span data-lang="en">Overview</span><span data-lang="zh">概览</span></a>
+    <a href="#architecture" data-nav="architecture"><span data-lang="en">Architecture</span><span data-lang="zh">架构</span></a>
+    <a href="#configuration" data-nav="configuration"><span data-lang="en">Configuration</span><span data-lang="zh">配置</span></a>
+    <a href="#providers" data-nav="providers"><span data-lang="en">LLM Providers</span><span data-lang="zh">LLM 提供商</span></a>
+    <a href="#api-reference" data-nav="api"><span data-lang="en">API Reference</span><span data-lang="zh">API 参考</span></a>
+    <a href="#extending" data-nav="extending"><span data-lang="en">Extending</span><span data-lang="zh">扩展</span></a>
+    <a href="#faq" data-nav="faq"><span data-lang="en">FAQ</span><span data-lang="zh">常见问题</span></a>
+  </div>
+</nav>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="main">
+
+<!-- ── Overview ── -->
+<section id="overview">
+<h1>ArcClaw</h1>
+<p data-lang="en">ArcClaw is a <strong>multi-agent AI collaboration platform</strong> built on the <a href="https://sdk.vercel.ai/">Vercel AI SDK</a>. It runs a team of 5 specialized AI agents — Team Leader, PD, Frontend, Backend, QA — that work together to turn product requirements into tested, working software.</p>
+<p data-lang="zh">ArcClaw 是一个基于 <a href="https://sdk.vercel.ai/">Vercel AI SDK</a> 构建的<strong>多智能体 AI 协作平台</strong>。它运行由 5 个专业 AI 智能体（Team Leader、PD、Frontend、Backend、QA）组成的团队，协同工作，将产品需求转化为经过测试的可运行软件。</p>
+
+<h2 data-lang="en">Quick Start</h2>
+<h2 data-lang="zh">快速开始</h2>
+<pre><code># 1. Install / 安装
+npm install arcclaw
+
+# 2. Configure / 配置
+cp .env.example .env
+# Edit .env → set LLM_PROVIDER + API key / 编辑 .env → 设置 LLM_PROVIDER + API Key
+
+# 3. Start / 启动
+npx arcclaw start
+
+# 4. Submit a requirement / 提交需求
+curl -X POST http://localhost:3000/api/requirements \
+  -H "Content-Type: application/json" \
+  -d '{"title":"User auth","description":"Login + registration flow"}'</code></pre>
+
+<h2 data-lang="en">Agent Team</h2>
+<h2 data-lang="zh">智能体团队</h2>
+<table>
+  <tr><th>Agent</th><th data-lang="en">Role</th><th data-lang="zh">角色</th><th data-lang="en">Model Tier</th><th data-lang="zh">模型层级</th></tr>
+  <tr><td><strong>Team Leader</strong></td><td data-lang="en">Orchestration, requirement decomposition, task assignment</td><td data-lang="zh">编排调度，需求分解，任务分配</td><td data-lang="en">Powerful</td><td data-lang="zh">强大</td><td>(<code>LLM_MODEL</code>)</td></tr>
+  <tr><td><strong>PD</strong></td><td data-lang="en">Product specs &amp; PRDs</td><td data-lang="zh">产品规格与 PRD</td><td data-lang="en">Fast</td><td data-lang="zh">快速</td><td>(<code>LLM_MODEL_FAST</code>)</td></tr>
+  <tr><td><strong>Frontend</strong></td><td data-lang="en">UI components &amp; pages</td><td data-lang="zh">UI 组件与页面</td><td data-lang="en">Fast</td><td data-lang="zh">快速</td></tr>
+  <tr><td><strong>Backend</strong></td><td data-lang="en">APIs, services, data models</td><td data-lang="zh">API、服务、数据模型</td><td data-lang="en">Fast</td><td data-lang="zh">快速</td></tr>
+  <tr><td><strong>QA</strong></td><td data-lang="en">Test plans &amp; execution</td><td data-lang="zh">测试计划与执行</td><td data-lang="en">Fast</td><td data-lang="zh">快速</td></tr>
+</table>
+</section>
+
+<!-- ── Architecture ── -->
+<section id="architecture">
+<h1 data-lang="en">Technical Architecture</h1>
+<h1 data-lang="zh">技术架构</h1>
+
+<h2 data-lang="en">System Overview</h2>
+<h2 data-lang="zh">系统概述</h2>
+<pre><code>┌───────────────────────────────────────────┐
+│              ArcClaw Runtime              │
+│  ┌────────┐  ┌────────┐  ┌────────┐      │
+│  │  CLI   │  │  API   │  │  SSE   │      │
+│  │(cli.ts)│  │Express │  │(events)│      │
+│  └───┬────┘  └───┬────┘  └───┬────┘      │
+│      └───────────┼───────────┘            │
+│                  ▼                        │
+│          ┌──────────────┐                 │
+│          │ ArcClaw Class │                │
+│          └───┬───┬───┬──┘                │
+│              │   │   │                    │
+│     ┌────────┘   │   └────────┐           │
+│     ▼            ▼            ▼           │
+│  Agent     Task Store   Message Bus       │
+│  Runner                              │
+│     │            │            │           │
+│     ▼            ▼            ▼           │
+│  ┌────────────────────────────┐           │
+│  │      Agent Instances       │           │
+│  │  TL · PD · FE · BE · QA   │           │
+│  └────────────────────────────┘           │
+│     │                                     │
+│     ▼                                     │
+│  LLM Providers  ·  Tool Registry          │
+└───────────────────────────────────────────┘</code></pre>
+
+<h2 data-lang="en">Core Modules</h2>
+<h2 data-lang="zh">核心模块</h2>
+
+<h3 data-lang="en">Agent System — <code>src/agent/</code></h3>
+<h3 data-lang="zh">智能体系统 — <code>src/agent/</code></h3>
+<table>
+  <tr><th>File</th><th data-lang="en">Responsibility</th><th data-lang="zh">职责</th></tr>
+  <tr><td><code>base-agent.ts</code></td><td data-lang="en">Abstract base class: LLM calls, tool execution, subscriptions, lifecycle</td><td data-lang="zh">抽象基类：LLM 调用、工具执行、订阅、生命周期</td></tr>
+  <tr><td><code>agent-runner.ts</code></td><td data-lang="en">Agent registration, init, start/stop lifecycle</td><td data-lang="zh">智能体注册、初始化、启动/停止生命周期</td></tr>
+  <tr><td><code>context-window.ts</code></td><td data-lang="en">Sliding window context manager with token budgets</td><td data-lang="zh">滑动窗口上下文管理器，裁剪对话历史以保持在 token 预算内</td></tr>
+  <tr><td><code>agents/team-leader.ts</code></td><td data-lang="en">Orchestrator: analyzes requirements, decomposes into tasks</td><td data-lang="zh">编排器：分析需求，分解为任务，分配给工作智能体</td></tr>
+  <tr><td><code>agents/pd-agent.ts</code></td><td data-lang="en">Product Designer: writes PRDs &amp; technical specs</td><td data-lang="zh">产品设计师：编写 PRD 和技术规格</td></tr>
+  <tr><td><code>agents/frontend-agent.ts</code></td><td data-lang="en">Frontend Developer: UI components &amp; pages</td><td data-lang="zh">前端开发者：实现 UI 组件和页面</td></tr>
+  <tr><td><code>agents/backend-agent.ts</code></td><td data-lang="en">Backend Developer: APIs, services, data models</td><td data-lang="zh">后端开发者：实现 API、服务和数据模型</td></tr>
+  <tr><td><code>agents/qa-agent.ts</code></td><td data-lang="en">QA Engineer: test plans, cases, execution</td><td data-lang="zh">QA 工程师：测试计划、测试用例、执行测试</td></tr>
+</table>
+
+<h3 data-lang="en">Agent Lifecycle</h3>
+<h3 data-lang="zh">智能体生命周期</h3>
+<pre><code>init() → start() → [idle] → onTaskReceived() → thinking → executing_tool → [idle]
+                          → onMessageReceived() → thinking → [idle]
+                                                      ↓
+                                                    stop()</code></pre>
+<ol>
+  <li data-lang="en"><strong>init</strong> — Creates workspace, loads system prompt, subscribes to events</li>
+  <li data-lang="zh"><strong>init</strong> — 创建工作空间，加载系统提示词，订阅任务/消息事件</li>
+  <li data-lang="en"><strong>start</strong> — Marks running, processes pending tasks</li>
+  <li data-lang="zh"><strong>start</strong> — 标记为运行中，处理待处理任务</li>
+  <li data-lang="en"><strong>thinking</strong> — Calls LLM via <code>generateText()</code> with available tools</li>
+  <li data-lang="zh"><strong>thinking</strong> — 通过 <code>generateText()</code> 调用 LLM，携带可用工具</li>
+  <li data-lang="en"><strong>executing_tool</strong> — Runs tool (bash, file write, etc.) requested by LLM</li>
+  <li data-lang="zh"><strong>executing_tool</strong> — 运行 LLM 请求的工具（bash、文件写入等）</li>
+  <li data-lang="en"><strong>stop</strong> — Unsubscribes, marks idle</li>
+  <li data-lang="zh"><strong>stop</strong> — 取消订阅事件，标记为空闲</li>
+</ol>
+
+<h3 data-lang="en">Task Board — <code>src/task-board/</code></h3>
+<h3 data-lang="zh">任务面板 — <code>src/task-board/</code></h3>
+<table>
+  <tr><th>File</th><th data-lang="en">Responsibility</th><th data-lang="zh">职责</th></tr>
+  <tr><td><code>task-store.ts</code></td><td data-lang="en">CRUD for tasks/requirements; file-based JSON with file locking</td><td data-lang="zh">任务和需求的 CRUD 操作；基于文件的 JSON 持久化，带文件锁定</td></tr>
+  <tr><td><code>task-watcher.ts</code></td><td data-lang="en">EventEmitter for task_created/updated/status_changed events</td><td data-lang="zh">EventEmitter，触发 task_created/updated/status_changed 事件</td></tr>
+  <tr><td><code>state-machine.ts</code></td><td data-lang="en">Validates status transitions</td><td data-lang="zh">验证任务状态变更</td></tr>
+  <tr><td><code>dependency-resolver.ts</code></td><td data-lang="en">Topological sort, cycle detection, ready-task computation</td><td data-lang="zh">拓扑排序、循环检测、就绪任务计算</td></tr>
+</table>
+
+<h3 data-lang="en">Task State Machine</h3>
+<h3 data-lang="zh">任务状态机</h3>
+<pre><code>          ┌──────────┐
+          │  pending  │
+          └─────┬─────┘
+                │ in_progress
+                ▼
+          ┌──────────┐
+    ┌─────│in_progress│─────┐
+    │     └──────────┘     │
+    │ blocked   completed  │ cancelled
+    ▼          ▼           ▼
+┌────────┐ ┌────────┐ ┌──────────┐
+│blocked │ │completed│ │cancelled │
+└────────┘ └────────┘ └──────────┘</code></pre>
+
+<h3 data-lang="en">Message Bus — <code>src/messaging/</code></h3>
+<h3 data-lang="zh">消息总线 — <code>src/messaging/</code></h3>
+<table>
+  <tr><td><code>message-bus.ts</code></td><td data-lang="en">Central routing: agents send, bus delivers or broadcasts</td><td data-lang="zh">中央消息路由：智能体发送，总线投递或广播</td></tr>
+  <tr><td><code>message-store.ts</code></td><td data-lang="en">JSON file persistence with read/unread tracking</td><td data-lang="zh">JSON 文件持久化，支持已读/未读跟踪</td></tr>
+  <tr><td><code>message-router.ts</code></td><td data-lang="en">Routes by <code>to</code> field</td><td data-lang="zh">根据 <code>to</code> 字段路由消息</td></tr>
+  <tr><td><code>file-watcher.ts</code></td><td data-lang="en">Watches messages directory via chokidar</td><td data-lang="zh">使用 chokidar 监听消息目录</td></tr>
+</table>
+
+<h3 data-lang="en">Tool Permission Matrix</h3>
+<h3 data-lang="zh">工具权限矩阵</h3>
+<table>
+  <tr><th>Agent</th><th>bash</th><th>file_writer</th><th>file_editor</th><th>file_reader</th><th>code_search</th></tr>
+  <tr><td>Team Leader</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+  <tr><td>PD</td><td>—</td><td>✓</td><td>—</td><td>✓</td><td>✓</td></tr>
+  <tr><td>Frontend</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+  <tr><td>Backend</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+  <tr><td>QA</td><td>✓</td><td>✓</td><td>—</td><td>✓</td><td>✓</td></tr>
+</table>
+
+<h3 data-lang="en">LLM Providers — <code>src/llm/</code></h3>
+<h3 data-lang="zh">LLM 提供商 — <code>src/llm/</code></h3>
+<table>
+  <tr><td><code>provider-registry.ts</code></td><td data-lang="en">Global registry for LLMProviderDefinition objects</td><td data-lang="zh">LLMProviderDefinition 对象的全局注册表</td></tr>
+  <tr><td><code>provider-factory.ts</code></td><td data-lang="en">Built-in providers (openai, anthropic, deepseek, ollama)</td><td data-lang="zh">内置提供商（openai、anthropic、deepseek、ollama）</td></tr>
+  <tr><td><code>llm-logger.ts</code></td><td data-lang="en">Logs every LLM call (input, output, tokens, duration) — singleton</td><td data-lang="zh">记录每次 LLM 调用（输入、输出、token、耗时）— 单例模式</td></tr>
+</table>
+
+<h3 data-lang="en">Data Persistence</h3>
+<h3 data-lang="zh">数据持久化</h3>
+<p data-lang="en">All runtime data stored as JSON files on disk — no database required:</p>
+<p data-lang="zh">所有运行时数据以 JSON 文件形式存储在磁盘上 — 无需数据库：</p>
+<pre><code>data/
+  tasks/        — {taskId}.json
+  messages/     — {messageId}.json
+  llm-logs/     — {logId}.json
+  audit/        — arcclaw.log</code></pre>
+
+<h3 data-lang="en">Directory Structure</h3>
+<h3 data-lang="zh">目录结构</h3>
+<pre><code>arcclaw/
+  dist/            — Compiled JS + declarations / 编译后的 JS + 类型声明
+  prompts/         — Agent system prompts (.md) / 智能体系统提示词
+  src/
+    agent/         — Agent system / 智能体系统
+    api/           — Express API server / Express API 服务器
+    llm/           — LLM providers + logging / LLM 提供商 + 日志
+    messaging/     — Message bus / 消息总线
+    task-board/    — Task management / 任务管理
+    tools/         — Tool implementations / 工具实现
+    types/         — TypeScript types / TypeScript 类型
+    utils/         — Shared utilities / 共享工具函数
+    config.ts      — Configuration loading / 配置加载
+    bootstrap.ts   — Default service wiring / 默认服务装配
+    index.ts       — ArcClaw class + public exports / ArcClaw 类 + 公共导出
+    cli.ts         — CLI entry point / CLI 入口</code></pre>
+</section>
+
+<!-- ── Configuration ── -->
+<section id="configuration">
+<h1 data-lang="en">Configuration Reference</h1>
+<h1 data-lang="zh">配置参考</h1>
+<p data-lang="en">ArcClaw resolves config in priority order: <strong>Programmatic overrides → Config file → Env vars → Built-in defaults</strong>.</p>
+<p data-lang="zh">ArcClaw 按优先级顺序解析配置：<strong>编程式覆盖 → 配置文件 → 环境变量 → 内置默认值</strong>。</p>
+
+<h2 data-lang="en">LLM Provider</h2>
+<h2 data-lang="zh">LLM 提供商</h2>
+<table>
+  <tr><th>Variable</th><th>Default</th><th data-lang="en">Description</th><th data-lang="zh">描述</th></tr>
+  <tr><td><code>LLM_PROVIDER</code></td><td><code>openai</code></td><td data-lang="en">Provider: openai, anthropic, deepseek, ollama, or custom</td><td data-lang="zh">提供商：openai、anthropic、deepseek、ollama 或自定义</td></tr>
+  <tr><td><code>LLM_MODEL</code></td><td><code>gpt-4o</code></td><td data-lang="en">Team Leader model for orchestration</td><td data-lang="zh">Team Leader 用于编排的模型</td></tr>
+  <tr><td><code>LLM_MODEL_FAST</code></td><td><em data-lang="en">same as LLM_MODEL</em><em data-lang="zh">同 LLM_MODEL</em></td><td data-lang="en">Worker agent model (PD, FE, BE, QA)</td><td data-lang="zh">工作智能体模型（PD、FE、BE、QA）</td></tr>
+  <tr><td><code>LLM_MAX_TOKENS</code></td><td><code>4096</code></td><td data-lang="en">Max tokens per response</td><td data-lang="zh">每次响应的最大 token 数</td></tr>
+  <tr><td><code>LLM_TEMPERATURE</code></td><td><code>0.7</code></td><td data-lang="en">Sampling temperature (0.0 – 2.0)</td><td data-lang="zh">采样温度（0.0 – 2.0）</td></tr>
+  <tr><td><code>LLM_BASE_URL</code></td><td><em data-lang="en">provider default</em><em data-lang="zh">提供商默认值</em></td><td data-lang="en">Custom base URL for proxies / Azure</td><td data-lang="zh">代理 / Azure 的自定义 Base URL</td></tr>
+</table>
+
+<h2 data-lang="en">Provider-Specific Keys</h2>
+<h2 data-lang="zh">提供商专用 Key</h2>
+<table>
+  <tr><th>Variable</th><th data-lang="en">Provider</th><th data-lang="zh">提供商</th></tr>
+  <tr><td><code>OPENAI_API_KEY</code></td><td>openai</td></tr>
+  <tr><td><code>ANTHROPIC_API_KEY</code></td><td data-lang="en">anthropic (also for DeepSeek via Anthropic API)</td><td data-lang="zh">anthropic（也可用于通过 Anthropic API 访问 DeepSeek）</td></tr>
+  <tr><td><code>DEEPSEEK_API_KEY</code></td><td>deepseek</td></tr>
+  <tr><td><code>DEEPSEEK_BASE_URL</code></td><td data-lang="en">deepseek (default: <code>https://api.deepseek.com/v1</code>)</td><td data-lang="zh">deepseek（默认：<code>https://api.deepseek.com/v1</code>）</td></tr>
+  <tr><td><code>OLLAMA_BASE_URL</code></td><td data-lang="en">ollama (default: <code>http://localhost:11434</code>)</td><td data-lang="zh">ollama（默认：<code>http://localhost:11434</code>）</td></tr>
+</table>
+
+<h2 data-lang="en">Agent Settings</h2>
+<h2 data-lang="zh">智能体设置</h2>
+<table>
+  <tr><th>Variable</th><th>Default</th><th data-lang="en">Description</th><th data-lang="zh">描述</th></tr>
+  <tr><td><code>AGENT_MAX_STEPS</code></td><td><code>15</code></td><td data-lang="en">Max tool-calling steps per LLM interaction</td><td data-lang="zh">每次 LLM 交互的最大工具调用步数</td></tr>
+  <tr><td><code>AGENT_CONTEXT_TOKEN_BUDGET</code></td><td><code>100000</code></td><td data-lang="en">Token budget for sliding context window</td><td data-lang="zh">滑动上下文窗口的 Token 预算</td></tr>
+  <tr><td><code>AGENT_CONCURRENT_TASKS</code></td><td><code>1</code></td><td data-lang="en">Tasks an agent can process simultaneously</td><td data-lang="zh">智能体可同时处理的任务数</td></tr>
+</table>
+
+<h2 data-lang="en">Server &amp; Paths</h2>
+<h2 data-lang="zh">服务器与路径</h2>
+<table>
+  <tr><th>Variable</th><th>Default</th><th data-lang="en">Description</th><th data-lang="zh">描述</th></tr>
+  <tr><td><code>API_PORT</code></td><td><code>3000</code></td><td data-lang="en">REST API server port</td><td data-lang="zh">REST API 服务器端口</td></tr>
+  <tr><td><code>API_HOST</code></td><td><code>0.0.0.0</code></td><td data-lang="en">API server bind address</td><td data-lang="zh">API 服务器绑定的主机地址</td></tr>
+  <tr><td><code>DATA_DIR</code></td><td><code>./data</code></td><td data-lang="en">Runtime data directory</td><td data-lang="zh">运行时数据目录</td></tr>
+  <tr><td><code>WORKSPACE_DIR</code></td><td><code>./workspaces</code></td><td data-lang="en">Agent workspace directory</td><td data-lang="zh">智能体工作空间目录</td></tr>
+  <tr><td><code>PROMPTS_DIR</code></td><td><em data-lang="en">relative to package</em><em data-lang="zh">相对于包</em></td><td data-lang="en">Custom agent system prompts directory</td><td data-lang="zh">自定义智能体系统提示词目录</td></tr>
+  <tr><td><code>LOG_LEVEL</code></td><td><code>info</code></td><td data-lang="en">Pino log level</td><td data-lang="zh">Pino 日志级别</td></tr>
+</table>
+
+<h2 data-lang="en">Config File</h2>
+<h2 data-lang="zh">配置文件</h2>
+<pre><code>// arcclaw.config.json
+{
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "modelFast": "gpt-4o-mini",
+    "maxTokens": 8192,
+    "temperature": 0.5
+  },
+  "agents": { "maxSteps": 20, "contextTokenBudget": 120000 },
+  "api": { "port": 4000 },
+  "paths": { "dataDir": "/var/arcclaw/data", "promptsDir": "./custom-prompts" }
+}</code></pre>
+
+<h2 data-lang="en">Programmatic Overrides</h2>
+<h2 data-lang="zh">编程式覆盖</h2>
+<pre><code>import { ArcClaw } from 'arcclaw';
+
+const app = new ArcClaw({
+  config: {
+    llm: {
+      provider: 'deepseek',
+      model: 'deepseek-v4-pro',
+      modelFast: 'deepseek-v4-flash',
+      apiKey: process.env.MY_KEY,
+    },
+    api: { port: 5000 },
+  },
+});</code></pre>
+</section>
+
+<!-- ── Providers ── -->
+<section id="providers">
+<h1 data-lang="en">LLM Providers Guide</h1>
+<h1 data-lang="zh">LLM 提供商指南</h1>
+<p data-lang="en">ArcClaw uses the <a href="https://sdk.vercel.ai/">Vercel AI SDK</a> as its model abstraction layer. Every provider must return a Vercel AI SDK <code>LanguageModel</code> instance.</p>
+<p data-lang="zh">ArcClaw 使用 <a href="https://sdk.vercel.ai/">Vercel AI SDK</a> 作为模型抽象层。每个提供商必须返回一个 Vercel AI SDK <code>LanguageModel</code> 实例。</p>
+
+<h2 data-lang="en">Built-in Providers</h2>
+<h2 data-lang="zh">内置提供商</h2>
+
+<h3>OpenAI</h3>
+<pre><code>LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-your-key
+LLM_MODEL=gpt-4o
+
+# Custom base URL (Azure, proxies) / 自定义 Base URL（Azure、代理）：
+LLM_BASE_URL=https://your-proxy.com/v1</code></pre>
+
+<h3>Anthropic</h3>
+<pre><code>LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-your-key
+LLM_MODEL=claude-sonnet-4-20250514</code></pre>
+
+<h3>DeepSeek</h3>
+<pre><code>LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=sk-your-key
+LLM_MODEL=deepseek-v4-pro
+LLM_MODEL_FAST=deepseek-v4-flash
+
+# Or via Anthropic-compatible API / 或通过兼容 Anthropic 的 API：
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-your-deepseek-key
+LLM_BASE_URL=https://api.deepseek.com/anthropic
+LLM_MODEL=deepseek-v4-pro</code></pre>
+
+<h3 data-lang="en">Ollama (Local)</h3>
+<h3 data-lang="zh">Ollama（本地）</h3>
+<pre><code>LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+LLM_MODEL=llama3
+
+# Setup / 设置：
+ollama serve
+ollama pull llama3</code></pre>
+
+<h2 data-lang="en">Custom Providers</h2>
+<h2 data-lang="zh">自定义提供商</h2>
+<pre><code>import { ArcClaw } from 'arcclaw';
+
+const app = new ArcClaw({
+  config: { llm: { provider: 'google', model: 'gemini-pro' } },
+});
+
+app.registerProvider({
+  name: 'google',
+  apiKeyEnvVar: 'GOOGLE_API_KEY',
+  createModel: async ({ model, apiKey }) => {
+    const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+    return createGoogleGenerativeAI({ apiKey })(model);
+  },
+});
+await app.start();</code></pre>
+
+<h3 data-lang="en">Provider Interface</h3>
+<h3 data-lang="zh">提供商接口</h3>
+<pre><code>interface LLMProviderDefinition {
+  name: string;
+  createModel(config: {
+    model: string;
+    apiKey?: string;
+    baseUrl?: string;
+    options?: Record&lt;string, unknown&gt;;
+  }): Promise&lt;any&gt;;
+  defaultBaseUrl?: string;
+  apiKeyEnvVar?: string;
+  requiresApiKey?: boolean;  // default: true / 默认：true
+}</code></pre>
+
+<h2 data-lang="en">Model Tiering</h2>
+<h2 data-lang="zh">模型分层</h2>
+<ul data-lang="en">
+  <li><strong><code>LLM_MODEL</code></strong> (powerful) — Team Leader for reasoning &amp; orchestration</li>
+  <li><strong><code>LLM_MODEL_FAST</code></strong> (fast) — Worker agents for code generation</li>
+</ul>
+<ul data-lang="zh">
+  <li><strong><code>LLM_MODEL</code></strong>（强大）— Team Leader 用于推理和编排</li>
+  <li><strong><code>LLM_MODEL_FAST</code></strong>（快速）— 工作智能体用于代码生成</li>
+</ul>
+<pre><code>LLM_MODEL=gpt-4o              # Team Leader
+LLM_MODEL_FAST=gpt-4o-mini    # Worker agents / 工作智能体</code></pre>
+</section>
+
+<!-- ── API Reference ── -->
+<section id="api-reference">
+<h1 data-lang="en">REST API Reference</h1>
+<h1 data-lang="zh">REST API 参考</h1>
+<p data-lang="en">Base URL: <code>http://localhost:3000</code> (configurable via <code>API_PORT</code>). All responses are JSON. Errors return <code>{"error":"message"}</code>.</p>
+<p data-lang="zh">基础 URL：<code>http://localhost:3000</code>（可通过 <code>API_PORT</code> 配置）。所有响应均为 JSON。错误返回 <code>{"error":"message"}</code>。</p>
+
+<h2 data-lang="en">Health Check</h2>
+<h2 data-lang="zh">健康检查</h2>
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/health</span></div>
+<p data-lang="en">Returns system health and agent count.</p>
+<p data-lang="zh">返回系统健康状况和智能体数量。</p>
+<pre><code>{
+  "status": "ok",
+  "timestamp": "2025-06-12T10:00:00.000Z",
+  "agents": 5,
+  "sse_clients": 2
+}</code></pre>
+
+<h2 data-lang="en">Server-Sent Events</h2>
+<h2 data-lang="zh">服务器推送事件</h2>
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/events</span></div>
+<p data-lang="en">Subscribe to real-time updates via SSE stream.</p>
+<p data-lang="zh">通过 SSE 流订阅实时更新。</p>
+<table>
+  <tr><th>Event</th><th>Payload</th><th data-lang="en">Description</th><th data-lang="zh">描述</th></tr>
+  <tr><td><code>task_created</code></td><td><code>Task</code></td><td data-lang="en">New task created</td><td data-lang="zh">新任务已创建</td></tr>
+  <tr><td><code>task_updated</code></td><td><code>Task</code></td><td data-lang="en">Task modified</td><td data-lang="zh">任务已修改</td></tr>
+  <tr><td><code>task_status_changed</code></td><td><code>{task, oldStatus, newStatus}</code></td><td data-lang="en">Status transition</td><td data-lang="zh">任务状态变更</td></tr>
+  <tr><td><code>new_message</code></td><td><code>AgentMessage</code></td><td data-lang="en">Inter-agent message sent</td><td data-lang="zh">智能体间消息已发送</td></tr>
+  <tr><td><code>requirement_submitted</code></td><td><code>{requirement_id, task_id, title}</code></td><td data-lang="en">New requirement submitted</td><td data-lang="zh">新需求已提交</td></tr>
+  <tr><td><code>requirement_retriggered</code></td><td><code>{requirement_id, task_id, title, status}</code></td><td data-lang="en">Requirement re-triggered</td><td data-lang="zh">需求已重新触发</td></tr>
+</table>
+
+<h2 data-lang="en">Requirements</h2>
+<h2 data-lang="zh">需求</h2>
+
+<div class="api-endpoint"><span class="badge badge-post">POST</span><span class="path">/api/requirements</span></div>
+<p data-lang="en">Submit a new product requirement. Team Leader auto-decomposes into tasks.</p>
+<p data-lang="zh">提交新的产品需求。Team Leader 将自动分解为任务。</p>
+<pre><code>// Body / 请求体
+{ "title": "User auth system", "description": "...", "priority": "high" }
+
+// Response / 响应：201 Created
+{ "id": "req_abc123", "task_id": "task_xyz789", "title": "...", "status": "pending" }</code></pre>
+<table>
+  <tr><th>Field</th><th>Type</th><th data-lang="en">Required</th><th data-lang="zh">必填</th><th data-lang="en">Description</th><th data-lang="zh">描述</th></tr>
+  <tr><td><code>title</code></td><td>string</td><td data-lang="en">yes</td><td data-lang="zh">是</td><td data-lang="en">Short title</td><td data-lang="zh">简短标题</td></tr>
+  <tr><td><code>description</code></td><td>string</td><td data-lang="en">yes</td><td data-lang="zh">是</td><td data-lang="en">Detailed description</td><td data-lang="zh">详细描述</td></tr>
+  <tr><td><code>priority</code></td><td>string</td><td data-lang="en">no</td><td data-lang="zh">否</td><td data-lang="en">critical, high, medium, low (default: medium)</td><td data-lang="zh">critical、high、medium、low（默认：medium）</td></tr>
+</table>
+
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/requirements</span></div>
+<p data-lang="en">List all requirements with progress summary.</p>
+<p data-lang="zh">列出所有需求及其进度摘要。</p>
+
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/requirements/:id</span></div>
+<p data-lang="en">Get detailed status of a single requirement with progress percentage.</p>
+<p data-lang="zh">获取单个需求的详细状态和进度百分比。</p>
+
+<div class="api-endpoint"><span class="badge badge-post">POST</span><span class="path">/api/requirements/:id/retrigger</span></div>
+<p data-lang="en">Re-trigger a completed or failed requirement. Creates a new decomposition task.</p>
+<p data-lang="zh">重新触发已完成或失败的需求。创建新的分解任务。</p>
+
+<h2 data-lang="en">Tasks</h2>
+<h2 data-lang="zh">任务</h2>
+
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/tasks</span></div>
+<p data-lang="en">List tasks with optional filters.</p>
+<p data-lang="zh">列出任务，支持可选过滤。</p>
+<table>
+  <tr><th>Parameter</th><th>Type</th><th data-lang="en">Description</th><th data-lang="zh">描述</th></tr>
+  <tr><td><code>status</code></td><td>string</td><td data-lang="en">pending, in_progress, completed, blocked, cancelled</td><td data-lang="zh">pending、in_progress、completed、blocked、cancelled</td></tr>
+  <tr><td><code>assignee</code></td><td>string</td><td data-lang="en">team_leader, pd, frontend, backend, qa</td><td data-lang="zh">team_leader、pd、frontend、backend、qa</td></tr>
+  <tr><td><code>requirement_id</code></td><td>string</td><td data-lang="en">Filter by parent requirement</td><td data-lang="zh">按父需求过滤</td></tr>
+  <tr><td><code>priority</code></td><td>string</td><td data-lang="en">Filter by priority</td><td data-lang="zh">按优先级过滤</td></tr>
+</table>
+
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/tasks/:id</span></div>
+<p data-lang="en">Get a single task by ID.</p>
+<p data-lang="zh">按 ID 获取单个任务。</p>
+
+<div class="api-endpoint"><span class="badge badge-post">POST</span><span class="path">/api/tasks</span></div>
+<p data-lang="en">Create a task directly (admin override).</p>
+<p data-lang="zh">直接创建任务（管理员覆盖）。</p>
+
+<div class="api-endpoint"><span class="badge badge-patch">PATCH</span><span class="path">/api/tasks/:id</span></div>
+<p data-lang="en">Update task status or fields.</p>
+<p data-lang="zh">更新任务状态或字段。</p>
+<pre><code>// Status transition / 状态变更
+{ "status": "completed", "reason": "All tests passing" }
+
+// Field update / 字段更新
+{ "title": "Updated title", "priority": "critical" }</code></pre>
+
+<h2 data-lang="en">Agents</h2>
+<h2 data-lang="zh">智能体</h2>
+
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/agents</span></div>
+<p data-lang="en">Get status of all agents (id, state, current_task_id, context_usage, last_activity, error).</p>
+<p data-lang="zh">获取所有智能体状态（id、state、current_task_id、context_usage、last_activity、error）。</p>
+
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/agents/:id</span></div>
+<p data-lang="en">Get status of a specific agent.</p>
+<p data-lang="zh">获取特定智能体的状态。</p>
+
+<div class="api-endpoint"><span class="badge badge-post">POST</span><span class="path">/api/agents/:id/message</span></div>
+<p data-lang="en">Send a message to a specific agent.</p>
+<p data-lang="zh">向特定智能体发送消息。</p>
+<pre><code>// Body / 请求体
+{ "type": "question", "subject": "Status update", "body": "What's the progress?" }</code></pre>
+
+<h2 data-lang="en">Messages</h2>
+<h2 data-lang="zh">消息</h2>
+
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/messages</span></div>
+<p data-lang="en">List inter-agent messages with optional filters (<code>to</code>, <code>from</code>, <code>type</code>).</p>
+<p data-lang="zh">列出智能体间消息，支持可选过滤（<code>to</code>、<code>from</code>、<code>type</code>）。</p>
+
+<h2 data-lang="en">LLM Logs</h2>
+<h2 data-lang="zh">LLM 日志</h2>
+
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/llm-logs</span></div>
+<p data-lang="en">List LLM call log entries (most recent first). Query: <code>limit</code> (default 50, max 200), <code>offset</code>.</p>
+<p data-lang="zh">列出 LLM 调用日志条目（最新优先）。查询参数：<code>limit</code>（默认 50，上限 200）、<code>offset</code>。</p>
+<pre><code>{
+  "entries": [{
+    "id": "llm_abc123",
+    "timestamp": "2025-06-12T10:00:00.000Z",
+    "duration_ms": 3500,
+    "agent_id": "team_leader",
+    "model": "gpt-4o",
+    "provider": "openai",
+    "input_tokens": 1200,
+    "output_tokens": 500,
+    "total_tokens": 1700,
+    "error": null
+  }],
+  "total": 42
+}</code></pre>
+
+<div class="api-endpoint"><span class="badge badge-get">GET</span><span class="path">/api/llm-logs/:id</span></div>
+<p data-lang="en">Get a single LLM call log entry with full input/output details.</p>
+<p data-lang="zh">获取单条 LLM 调用日志条目，含完整输入/输出详情。</p>
+</section>
+
+<!-- ── Extending ── -->
+<section id="extending">
+<h1 data-lang="en">Extending ArcClaw</h1>
+<h1 data-lang="zh">扩展 ArcClaw</h1>
+
+<h2 data-lang="en">Custom Agents</h2>
+<h2 data-lang="zh">自定义智能体</h2>
+<p data-lang="en">Extend <code>BaseAgent</code> and implement lifecycle methods:</p>
+<p data-lang="zh">继承 <code>BaseAgent</code> 并实现生命周期方法：</p>
+<pre><code>import { BaseAgent, type Task, type AgentMessage } from 'arcclaw';
+
+export class DevOpsAgent extends BaseAgent {
+  constructor(config, taskStore, messageBus, toolRegistry) {
+    super('devops', config, taskStore, messageBus, toolRegistry);
+  }
+
+  getModelTier(): 'fast' { return 'fast'; }
+
+  async getSystemPrompt() {
+    return 'You are a DevOps engineer. Handle deployment & CI/CD.';
+  }
+
+  async onTaskReceived(task: Task) {
+    const response = await this.think(
+      `Task: "${task.title}".\n\n${task.description}`
+    );
+  }
+
+  async onMessageReceived(message: AgentMessage) {
+    await this.think(`Message from ${message.from}: ${message.body}`);
+  }
+}</code></pre>
+
+<h3 data-lang="en">Register the Agent</h3>
+<h3 data-lang="zh">注册智能体</h3>
+<pre><code>const app = new ArcClaw();
+await app.start();
+
+const devops = new DevOpsAgent(
+  app.getConfig(), app.getTaskStore()!,
+  app.getMessageBus()!, app.getToolRegistry()!
+);
+app.registerAgent(devops);</code></pre>
+
+<h3 data-lang="en">Lifecycle Methods</h3>
+<h3 data-lang="zh">生命周期方法</h3>
+<table>
+  <tr><th>Method</th><th data-lang="en">Called When</th><th data-lang="zh">调用时机</th><th data-lang="en">Purpose</th><th data-lang="zh">用途</th></tr>
+  <tr><td><code>init()</code></td><td data-lang="en">During bootstrap</td><td data-lang="zh">引导期间</td><td data-lang="en">Setup workspace, load prompt, subscribe to events</td><td data-lang="zh">设置工作空间，加载提示词，订阅事件</td></tr>
+  <tr><td><code>start()</code></td><td data-lang="en">After init</td><td data-lang="zh">init 之后</td><td data-lang="en">Begin processing pending tasks</td><td data-lang="zh">开始处理待处理任务</td></tr>
+  <tr><td><code>stop()</code></td><td data-lang="en">On shutdown</td><td data-lang="zh">关闭时</td><td data-lang="en">Unsubscribe from events</td><td data-lang="zh">取消订阅事件</td></tr>
+  <tr><td><code>onTaskReceived(task)</code></td><td data-lang="en">Task assigned</td><td data-lang="zh">任务分配时</td><td data-lang="en">Process the task</td><td data-lang="zh">处理任务</td></tr>
+  <tr><td><code>onMessageReceived(msg)</code></td><td data-lang="en">Message received</td><td data-lang="zh">收到消息时</td><td data-lang="en">React to the message</td><td data-lang="zh">响应消息</td></tr>
+  <tr><td><code>think(prompt, maxSteps?)</code></td><td data-lang="en">Your code</td><td data-lang="zh">你的代码调用</td><td data-lang="en">Send prompt to LLM with tools</td><td data-lang="zh">将提示词发送给 LLM 并携带工具</td></tr>
+</table>
+
+<h2 data-lang="en">Custom Tools</h2>
+<h2 data-lang="zh">自定义工具</h2>
+<p data-lang="en">Implement the <code>Tool</code> interface with Zod schemas:</p>
+<p data-lang="zh">实现 <code>Tool</code> 接口并使用 Zod 模式：</p>
+<pre><code>import type { Tool } from 'arcclaw';
+import { z } from 'zod';
+
+export const deployTool: Tool = {
+  name: 'deploy',
+  description: 'Deploy to the specified environment',
+  parameters: z.object({
+    environment: z.enum(['staging', 'production']),
+    branch: z.string().optional(),
+  }),
+  execute: async (input) =&gt; {
+    // ... run deployment
+    return { success: true, result: 'Deployed!' };
+  },
+};
+
+// Register / 注册
+app.registerTool(deployTool);
+
+// Grant permissions / 授予权限
+import { TOOL_PERMISSIONS } from 'arcclaw';
+TOOL_PERMISSIONS.backend.push('deploy');</code></pre>
+
+<h3 data-lang="en">Tool Interface</h3>
+<h3 data-lang="zh">Tool 接口</h3>
+<pre><code>interface Tool {
+  name: string;
+  description: string;
+  parameters: z.ZodType&lt;any&gt;;
+  execute: (input: any) =&gt; Promise&lt;ToolOutput&gt;;
+}
+
+interface ToolOutput {
+  success: boolean;
+  result?: unknown;
+  error?: string;
+  stdout?: string;
+  stderr?: string;
+}</code></pre>
+
+<h2 data-lang="en">Custom System Prompts</h2>
+<h2 data-lang="zh">自定义系统提示词</h2>
+<pre><code>my-prompts/
+  team-leader.system.md
+  pd-agent.system.md
+  frontend-agent.system.md
+  backend-agent.system.md
+  qa-agent.system.md
+
+# Configure / 配置：
+PROMPTS_DIR=./my-prompts</code></pre>
+</section>
+
+<!-- ── FAQ ── -->
+<section id="faq">
+<h1 data-lang="en">FAQ</h1>
+<h1 data-lang="zh">常见问题</h1>
+
+<h2 data-lang="en">General</h2>
+<h2 data-lang="zh">概述</h2>
+
+<h3 data-lang="en">What Node.js versions are supported?</h3>
+<h3 data-lang="zh">支持哪些 Node.js 版本？</h3>
+<p data-lang="en">ArcClaw requires <strong>Node.js &gt;= 18</strong>. It uses ES modules, <code>import.meta</code>, and modern APIs.</p>
+<p data-lang="zh">ArcClaw 要求 <strong>Node.js &gt;= 18</strong>。使用 ES 模块、<code>import.meta</code> 和现代 API。</p>
+
+<h3 data-lang="en">Does ArcClaw require a database?</h3>
+<h3 data-lang="zh">ArcClaw 需要数据库吗？</h3>
+<p data-lang="en">No. All data is persisted as JSON files on disk. No external database needed.</p>
+<p data-lang="zh">不需要。所有数据以 JSON 文件形式存储在磁盘上，无需外部数据库。</p>
+
+<h2 data-lang="en">LLM Providers</h2>
+<h2 data-lang="zh">LLM 提供商</h2>
+
+<h3 data-lang="en">Which providers are supported?</h3>
+<h3 data-lang="zh">支持哪些提供商？</h3>
+<ul data-lang="en">
+  <li><strong>OpenAI</strong> — GPT-4o, GPT-4, etc.</li>
+  <li><strong>Anthropic</strong> — Claude Sonnet, Claude Opus, etc.</li>
+  <li><strong>DeepSeek</strong> — DeepSeek V4 Pro, DeepSeek V4 Flash, etc.</li>
+  <li><strong>Ollama</strong> — Local models: Llama 3, Mistral, Code Llama, etc.</li>
+</ul>
+<ul data-lang="zh">
+  <li><strong>OpenAI</strong> — GPT-4o、GPT-4 等</li>
+  <li><strong>Anthropic</strong> — Claude Sonnet、Claude Opus 等</li>
+  <li><strong>DeepSeek</strong> — DeepSeek V4 Pro、DeepSeek V4 Flash 等</li>
+  <li><strong>Ollama</strong> — 本地模型：Llama 3、Mistral、Code Llama 等</li>
+</ul>
+
+<h3 data-lang="en">Can I run without an API key?</h3>
+<h3 data-lang="zh">可以在没有 API Key 的情况下运行吗？</h3>
+<p data-lang="en">Yes — use <strong>Ollama</strong> for local models:</p>
+<p data-lang="zh">可以 — 使用 <strong>Ollama</strong> 运行本地模型：</p>
+<pre><code>LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+LLM_MODEL=llama3</code></pre>
+
+<h3 data-lang="en">What's the difference between LLM_MODEL and LLM_MODEL_FAST?</h3>
+<h3 data-lang="zh">LLM_MODEL 和 LLM_MODEL_FAST 有什么区别？</h3>
+<ul data-lang="en">
+  <li><code>LLM_MODEL</code> — <strong>Team Leader</strong> for complex reasoning. Use a powerful model.</li>
+  <li><code>LLM_MODEL_FAST</code> — <strong>Worker agents</strong> for code generation. Use a faster/cheaper model.</li>
+</ul>
+<ul data-lang="zh">
+  <li><code>LLM_MODEL</code> — <strong>Team Leader</strong> 用于复杂推理。使用强大的模型。</li>
+  <li><code>LLM_MODEL_FAST</code> — <strong>工作智能体</strong>用于代码生成。使用更快/更便宜的模型。</li>
+</ul>
+
+<h2 data-lang="en">Configuration</h2>
+<h2 data-lang="zh">配置</h2>
+
+<h3 data-lang="en">Config priority order</h3>
+<h3 data-lang="zh">配置优先级顺序</h3>
+<ol data-lang="en">
+  <li>Programmatic overrides (<code>new ArcClaw({ config: {...} })</code>)</li>
+  <li>Config file (<code>arcclaw.config.json</code> or <code>--config</code> flag)</li>
+  <li>Environment variables (<code>.env</code> or shell)</li>
+  <li>Built-in defaults</li>
+</ol>
+<ol data-lang="zh">
+  <li>编程式覆盖（<code>new ArcClaw({ config: {...} })</code>）</li>
+  <li>配置文件（<code>arcclaw.config.json</code> 或 <code>--config</code> 标志）</li>
+  <li>环境变量（<code>.env</code> 或 shell）</li>
+  <li>内置默认值</li>
+</ol>
+
+<h3 data-lang="en">Custom agent prompts</h3>
+<h3 data-lang="zh">自定义智能体提示词</h3>
+<pre><code>PROMPTS_DIR=./my-prompts
+# Files / 文件：team-leader.system.md, pd-agent.system.md, etc.</code></pre>
+
+<h3 data-lang="en">Runtime data location</h3>
+<h3 data-lang="zh">运行时数据位置</h3>
+<pre><code># Default / 默认：./data
+# Override / 覆盖：
+DATA_DIR=/path/to/data</code></pre>
+
+<h2 data-lang="en">Dashboard</h2>
+<h2 data-lang="zh">仪表盘</h2>
+<pre><code>pnpm install
+pnpm run dev:all   # Backend + dashboard / 后端 + 仪表盘</code></pre>
+<p data-lang="en">Dashboard connects to <code>http://localhost:3000</code> (configurable via <code>VITE_API_URL</code>). Subscribes to <code>/api/events</code> SSE endpoint for real-time updates.</p>
+<p data-lang="zh">仪表盘默认连接到 <code>http://localhost:3000</code>（可通过 <code>VITE_API_URL</code> 配置）。通过 <code>/api/events</code> SSE 端点订阅实时更新。</p>
+
+<h2 data-lang="en">Troubleshooting</h2>
+<h2 data-lang="zh">故障排查</h2>
+
+<h3 data-lang="en">"Unknown LLM provider"</h3>
+<h3 data-lang="zh">"Unknown LLM provider" 错误</h3>
+<p data-lang="en">Provider name doesn't match any registered provider. Run <code>arcclaw providers</code> to see available providers.</p>
+<p data-lang="zh">提供商名称与任何已注册的提供商不匹配。运行 <code>arcclaw providers</code> 查看可用提供商。</p>
+
+<h3 data-lang="en">401 / 403 errors</h3>
+<h3 data-lang="zh">401 / 403 错误</h3>
+<p data-lang="en">API key is invalid or expired. Check env vars (<code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>DEEPSEEK_API_KEY</code>) and account credits.</p>
+<p data-lang="zh">API Key 无效或已过期。检查环境变量（<code>OPENAI_API_KEY</code>、<code>ANTHROPIC_API_KEY</code>、<code>DEEPSEEK_API_KEY</code>）和账户额度。</p>
+
+<h3 data-lang="en">Agent stuck in "thinking"</h3>
+<h3 data-lang="zh">智能体卡在"思考"状态</h3>
+<p data-lang="en">LLM call timed out or errored. Check <code>data/audit/arcclaw.log</code> and <code>data/llm-logs/</code>.</p>
+<p data-lang="zh">LLM 调用超时或出错。检查 <code>data/audit/arcclaw.log</code> 和 <code>data/llm-logs/</code>。</p>
+
+<h3 data-lang="en">Port already in use</h3>
+<h3 data-lang="zh">端口已被占用</h3>
+<pre><code>API_PORT=4000
+# or / 或：arcclaw start --port 4000</code></pre>
+</section>
+
+</main>
+</div>
+
+<script>
+const LANG_KEY = 'arcclaw-docs-lang';
+
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  localStorage.setItem(LANG_KEY, lang);
+
+  // Toggle buttons
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
+
+  // Toggle all data-lang elements
+  document.querySelectorAll('[data-lang]').forEach(el => {
+    el.classList.toggle('show', el.dataset.lang === lang);
+  });
+}
+
+// Init: prefer saved > browser > en
+const saved = localStorage.getItem(LANG_KEY);
+const browser = navigator.language.startsWith('zh') ? 'zh' : null;
+setLang(saved || browser || 'en');
+
+// Scroll spy
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.sidebar-nav a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 80) current = s.id; });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+});
+</script>
+</body>
+</html>

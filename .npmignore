@@ -1,0 +1,35 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Runtime data
+data/
+workspaces/
+
+# Dashboard (separate package)
+dashboard/
+
+# IDE/tooling
+.qoder/
+.pnpm-store/
+
+# Images
+*.png
+
+# Logs
+*.log
+
+# Source (only dist is shipped)
+src/
+
+# Tests
+tests/
+vitest.config.ts
+
+# TypeScript configs (not needed by consumers)
+tsconfig.json
+tsconfig.build.json
+
+# Git
+.gitignore
