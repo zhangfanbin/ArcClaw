@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
 import 'dotenv/config';
+import http from 'http';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { ArcClaw } from './index.js';
 import { listProviders } from './llm/provider-registry.js';
 import { registerBuiltinProviders } from './llm/provider-factory.js';
@@ -40,6 +44,7 @@ USAGE
 
 COMMANDS
   start              Start ArcClaw (default if no command given)
+  dashboard          Start the dashboard (requires ArcClaw API running)
   init               Print a sample .env configuration
   providers          List registered LLM providers
   help               Show this help message
@@ -58,6 +63,8 @@ ENVIRONMENT
 EXAMPLES
   arcclaw start
   arcclaw start --config ./my-config.json
+  arcclaw dashboard
+  arcclaw dashboard --port 8080 --api-port 3000
   arcclaw providers
 `);
 }
@@ -96,6 +103,85 @@ DATA_DIR=./data
 WORKSPACE_DIR=./workspaces
 # PROMPTS_DIR=./prompts   # override to use custom prompts
 `);
+}
+
+async function dashboardCommand(args: string[]): Promise<void> {
+  const portStr = getArgValue(args, '--port', '-p');
+  const apiPortStr = getArgValue(args, '--api-port');
+
+  const dashboardPort = portStr
+    ? parseInt(portStr, 10)
+    : parseInt(process.env.DASHBOARD_PORT || '5173', 10);
+  const apiPort = apiPortStr
+    ? parseInt(apiPortStr, 10)
+    : parseInt(process.env.API_PORT || '3000', 10);
+  const apiHost = process.env.API_HOST || 'localhost';
+
+  // Resolve dashboard dist path relative to this module
+  const pkgDir = path.dirname(fileURLToPath(import.meta.url));
+  const dashboardDist = path.join(pkgDir, '..', 'dashboard', 'dist');
+
+  if (!fs.existsSync(dashboardDist)) {
+    console.error(`Dashboard build not found at ${dashboardDist}`);
+    console.error('Run "npm run build:dashboard" first or clone the full repo.');
+    process.exit(1);
+  }
+
+  const { default: express } = await import('express');
+  const app = express();
+
+  // Proxy /api requests to the ArcClaw backend
+  app.use('/api', (req, res) => {
+    const headers: Record<string, string | string[] | undefined> = {};
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (key !== 'host') headers[key] = value;
+    }
+
+    const options: http.RequestOptions = {
+      hostname: apiHost === '0.0.0.0' ? '127.0.0.1' : apiHost,
+      port: apiPort,
+      path: req.url,
+      method: req.method,
+      headers,
+    };
+
+    const proxyReq = http.request(options, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'ECONNREFUSED') {
+        res.status(502).json({
+          error: 'API backend unreachable',
+          detail: `Is arcclaw running on ${apiHost}:${apiPort}?`,
+        });
+      } else {
+        res.status(502).json({ error: 'Proxy error', detail: err.message });
+      }
+    });
+
+    req.pipe(proxyReq);
+  });
+
+  // Serve static dashboard files
+  app.use(express.static(dashboardDist));
+
+  // SPA fallback — serve index.html for any non-API route
+  app.get('*', (req, res) => {
+    if (!req.url.startsWith('/api')) {
+      res.sendFile(path.join(dashboardDist, 'index.html'));
+    }
+  });
+
+  app.listen(dashboardPort, () => {
+    logger.info(
+      { dashboardPort, apiHost, apiPort },
+      `Dashboard ready at http://localhost:${dashboardPort} → /api → ${apiHost}:${apiPort}`,
+    );
+    console.log(`\n  🎛️  Dashboard: http://localhost:${dashboardPort}`);
+    console.log(`  🔗 API proxy: /api → http://${apiHost}:${apiPort}\n`);
+  });
 }
 
 async function startCommand(args: string[]): Promise<void> {
@@ -153,6 +239,9 @@ async function main(): Promise<void> {
   switch (command) {
     case 'start':
       await startCommand(args);
+      break;
+    case 'dashboard':
+      await dashboardCommand(args);
       break;
     case 'init':
       printInit();
