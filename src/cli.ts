@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
@@ -56,7 +56,7 @@ USAGE
 COMMANDS
   start              Start ArcClaw (default if no command given)
   dashboard          Start the dashboard (requires ArcClaw API running)
-  init               Print a sample .env configuration
+  init               Create .arcclaw/.env configuration file
   providers          List registered LLM providers
   help               Show this help message
   version            Show version
@@ -68,10 +68,11 @@ OPTIONS
   --model <name>     Override LLM model
 
 ENVIRONMENT
-  ArcClaw is configured via environment variables or a .env file.
-  Run "arcclaw init" to see all available options.
+  ArcClaw reads configuration from .arcclaw/.env.
+  Run "arcclaw init" to generate the file.
 
 EXAMPLES
+  arcclaw init
   arcclaw start
   arcclaw start --config ./my-config.json
   arcclaw dashboard
@@ -80,11 +81,20 @@ EXAMPLES
 `);
 }
 
-function printInit(): void {
-  console.log(`
-# Copy this into your .env file and adjust values:
+function initCommand(): void {
+  const arcclawDir = path.resolve('.arcclaw');
+  const envPath = path.join(arcclawDir, '.env');
 
-# LLM Provider: openai | anthropic | ollama | deepseek
+  if (!fs.existsSync(arcclawDir)) {
+    fs.mkdirSync(arcclawDir, { recursive: true });
+  }
+
+  if (fs.existsSync(envPath)) {
+    console.log(`.arcclaw/.env already exists. Edit it directly:\n  ${envPath}`);
+    return;
+  }
+
+  const content = `# LLM Provider: openai | anthropic | ollama | deepseek
 LLM_PROVIDER=openai
 
 # API key for your chosen provider
@@ -108,16 +118,11 @@ AGENT_CONCURRENT_TASKS=1
 API_PORT=3000
 API_HOST=0.0.0.0
 DASHBOARD_PORT=5173
+`;
 
-# Runtime directory (default: .arcclaw)
-# All runtime data (tasks, messages, llm-logs, agent configs) lives under this directory.
-# ARCCLAW_HOME=.arcclaw
-
-# Legacy path overrides (prefer ARCCLAW_HOME instead)
-# DATA_DIR=.arcclaw/data
-# WORKSPACE_DIR=.arcclaw
-# PROMPTS_DIR=./prompts   # override to use custom prompts
-`);
+  fs.writeFileSync(envPath, content, 'utf-8');
+  console.log(`Created ${envPath}`);
+  console.log('Edit this file to configure your LLM provider and API keys.');
 }
 
 async function dashboardCommand(args: string[]): Promise<void> {
@@ -243,6 +248,10 @@ async function startCommand(args: string[]): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
+  // Load .env from .arcclaw/.env (only affects start/dashboard commands)
+  const dotenvPath = path.resolve('.arcclaw', '.env');
+  dotenv.config({ path: dotenvPath });
+
   const args = process.argv.slice(2);
   const command = args[0] && !args[0].startsWith('-') ? args[0] : 'start';
 
@@ -263,7 +272,7 @@ async function main(): Promise<void> {
       await dashboardCommand(args);
       break;
     case 'init':
-      printInit();
+      initCommand();
       break;
     case 'providers':
       registerBuiltinProviders();
