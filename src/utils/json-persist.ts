@@ -1,18 +1,27 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 
 /**
  * Atomic JSON write: write to temp file then rename.
  * Prevents partial reads on crash.
+ * Uses a unique temp file name to avoid race conditions with concurrent writes.
  */
 export async function writeJSON<T>(filePath: string, data: T): Promise<void> {
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
 
-  const tmpPath = filePath + '.tmp';
+  const suffix = randomBytes(6).toString('hex');
+  const tmpPath = `${filePath}.${suffix}.tmp`;
   const content = JSON.stringify(data, null, 2);
-  await fs.writeFile(tmpPath, content, 'utf-8');
-  await fs.rename(tmpPath, filePath);
+  try {
+    await fs.writeFile(tmpPath, content, 'utf-8');
+    await fs.rename(tmpPath, filePath);
+  } catch (err) {
+    // Clean up orphaned tmp file on failure
+    await fs.unlink(tmpPath).catch(() => {});
+    throw err;
+  }
 }
 
 /**

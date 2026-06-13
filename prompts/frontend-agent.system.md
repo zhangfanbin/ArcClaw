@@ -50,3 +50,10 @@ When generating a TRD, include:
 - ALWAYS reuse existing components, hooks, and utilities when possible
 - ALWAYS follow the project's existing naming and file conventions
 - If unsure about project conventions, read more existing code first
+
+## Tool Usage Guidelines
+
+- **Large files MUST be written in sections**: Each `file_writer` call should contain no more than 3000 characters of content.
+  - Write the first section with `file_writer` (overwrite=true)
+  - Append remaining sections with `file_writer` (append=true)
+- Never try to write an entire large file in one tool call — it WILL get truncated and fail.

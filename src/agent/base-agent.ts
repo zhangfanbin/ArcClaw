@@ -310,6 +310,39 @@ export abstract class BaseAgent {
       return responseText;
     } catch (error: any) {
       const durationMs = Date.now() - startTime;
+      const errorMsg: string = error?.message || '';
+
+      // Detect truncated tool call arguments (output token limit hit)
+      const isTruncatedToolCall =
+        errorMsg.includes('JSON parsing failed') ||
+        errorMsg.includes('Invalid arguments for tool') ||
+        errorMsg.includes('unexpected end of JSON');
+
+      if (isTruncatedToolCall) {
+        // Don't mark as error — give the LLM a chance to recover
+        logger.warn(
+          { agentId: this.id, error: errorMsg.slice(0, 200) },
+          'Tool call arguments truncated (output token limit). Instructing agent to split writes.',
+        );
+
+        this.context.addMessage({
+          role: 'assistant',
+          content: '[Tool call failed: output was too long and got truncated.]',
+        });
+        this.context.addMessage({
+          role: 'user',
+          content:
+            'ERROR: Your previous tool call had content that was too long and got truncated. ' +
+            'You MUST split large file writes into smaller sections. ' +
+            'Write the FIRST section of the file now (keep each write under 3000 characters of content). ' +
+            'After this succeeds, use file_editor to append the remaining sections incrementally.',
+        });
+
+        this.status.state = 'idle';
+        this.status.last_activity = new Date().toISOString();
+        return ''; // Return empty — the context now has recovery instructions for next think() call
+      }
+
       this.status.state = 'error';
       this.status.error = error.message;
       this.status.last_activity = new Date().toISOString();
