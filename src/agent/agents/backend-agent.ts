@@ -58,26 +58,30 @@ export class BackendAgent extends BaseAgent {
   async onTaskReceived(task: Task): Promise<void> {
     logger.info({ taskId: task.id, title: task.title }, 'Backend Agent processing task');
 
-    // Step 1: Generate TRD
+    // Step 1: Explore project and generate TRD
     const trdPrompt = `
-Create a Technical Requirements Document (TRD) for the backend implementation:
+First, use the code_search and file_reader tools to explore the existing project:
+- What language, framework, and build tools are used?
+- What is the directory structure?
+- What existing backend patterns exist (routes, services, models)?
+- What naming conventions and coding style does the project use?
+
+Then create a Technical Requirements Document (TRD) for the backend implementation:
 
 **Task**: ${task.title}
 **Description**: ${task.description}
 
-Generate a TRD including:
-1. API design (endpoints, request/response schemas)
-2. Data models and schemas
-3. Business logic overview
-4. Error handling strategy
+The TRD MUST be based on the ACTUAL project tech stack you discovered, NOT assumptions.
+Include: API design, data models, business logic, error handling, and integration points with existing code.
 
-Output the complete TRD document in your response (do NOT call any tools).
+Output the complete TRD in your response.
 `;
 
     const trdResponse = await this.think(trdPrompt);
 
-    // Save TRD
-    const trdPath = `TRD_backend_${task.id}.md`;
+    // Save TRD under .arcclaw/data/artifacts
+    const arcclawHome = this.config.paths.arcclawHome;
+    const trdPath = `${arcclawHome}/data/artifacts/backend/TRD_${task.id}.md`;
     const fileWriter = this.toolRegistry.get('file_writer');
     if (fileWriter) {
       await fileWriter.execute({
@@ -105,9 +109,13 @@ Based on the task and TRD, implement the backend code:
 **Description**: ${task.description}
 **TRD**: ${trdResponse}
 
-Create the necessary API routes, services, and models.
-Write clean, well-typed, production-ready Node.js/TypeScript code.
-Use Express, Zod for validation, and proper error handling.
+IMPORTANT:
+- Use the SAME language, framework, and patterns as the existing project
+- Place files in the CORRECT existing directories (do NOT create new top-level dirs)
+- Reuse existing utilities, types, and shared modules
+- Follow the project's naming conventions and coding style
+- Use file_reader to read existing related files before writing new ones
+- Output code blocks with correct file paths (e.g. // File: src/routes/auth.ts)
 `;
 
     const codeResponse = await this.think(codePrompt);
@@ -197,22 +205,24 @@ Use Express, Zod for validation, and proper error handling.
 
       if (filePath && code) {
         await fileWriter.execute({
-          file_path: `backend/${taskId}/${filePath}`,
+          file_path: filePath,
           content: code,
           overwrite: true,
         });
-        await this.taskStore.addArtifact(taskId, `backend/${taskId}/${filePath}`);
+        await this.taskStore.addArtifact(taskId, filePath);
         fileCount++;
       }
     }
 
     if (fileCount === 0 && response.length > 100) {
+      const arcclawHome = this.config.paths.arcclawHome;
+      const artifactPath = `${arcclawHome}/data/artifacts/backend/${taskId}/implementation.md`;
       await fileWriter.execute({
-        file_path: `backend/${taskId}/implementation.ts`,
+        file_path: artifactPath,
         content: response,
         overwrite: true,
       });
-      await this.taskStore.addArtifact(taskId, `backend/${taskId}/implementation.ts`);
+      await this.taskStore.addArtifact(taskId, artifactPath);
     }
   }
 }

@@ -60,24 +60,32 @@ export class PdAgent extends BaseAgent {
 
     // Generate PRD based on the task
     const prompt = `
-Create a Product Requirements Document (PRD) for the following task:
+First, use the code_search and file_reader tools to understand what the existing project already has:
+- What features and pages currently exist?
+- What is the project's purpose and domain?
+- What existing components relate to this new feature?
+
+Then create a Product Requirements Document (PRD) for:
 
 **Task**: ${task.title}
 **Description**: ${task.description}
 
 Generate a comprehensive PRD including:
-1. Overview and goals
-2. User stories with acceptance criteria
-3. Scope (in/out)
-4. Dependencies and constraints
+1. Existing Context - what the project currently has that relates to this feature
+2. Overview and goals - what new capability is being added
+3. User stories with acceptance criteria
+4. Scope (in/out)
+5. Integration Points - how this connects to existing functionality
+6. Dependencies and constraints
 
-Output the complete PRD document in your response (do NOT call any tools).
+Do NOT describe features that already exist. Focus on what's NEW and how it integrates.
 `;
 
     const response = await this.think(prompt);
 
-    // Save PRD artifact
-    const prdPath = `PRD_${task.id}.md`;
+    // Save PRD artifact under .arcclaw/data/artifacts
+    const arcclawHome = this.config.paths.arcclawHome;
+    const prdPath = `${arcclawHome}/data/artifacts/pd/PRD_${task.id}.md`;
     const fileWriter = this.toolRegistry.get('file_writer');
     if (fileWriter) {
       await fileWriter.execute({

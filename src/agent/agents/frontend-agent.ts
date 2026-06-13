@@ -58,26 +58,31 @@ export class FrontendAgent extends BaseAgent {
   async onTaskReceived(task: Task): Promise<void> {
     logger.info({ taskId: task.id, title: task.title }, 'Frontend Agent processing task');
 
-    // Step 1: Generate TRD
+    // Step 1: Explore project and generate TRD
     const trdPrompt = `
-Create a Technical Requirements Document (TRD) for the frontend implementation:
+First, use the code_search and file_reader tools to explore the existing project:
+- What frontend framework is used (React, Vue, Angular, Svelte, etc.)?
+- What UI library and styling approach (Tailwind, Material UI, shadcn, CSS modules, etc.)?
+- What is the directory structure for components, pages, and assets?
+- What existing component patterns, hooks, and state management exist?
+- What routing and navigation patterns are used?
+
+Then create a Technical Requirements Document (TRD) for the frontend implementation:
 
 **Task**: ${task.title}
 **Description**: ${task.description}
 
-Generate a TRD including:
-1. Component architecture
-2. API contracts (expected endpoints and response shapes)
-3. State management decisions
-4. Key implementation considerations
+The TRD MUST be based on the ACTUAL project tech stack you discovered, NOT assumptions.
+Include: component architecture, API contracts, state management, and integration points with existing components.
 
-Output the complete TRD document in your response (do NOT call any tools).
+Output the complete TRD in your response.
 `;
 
     const trdResponse = await this.think(trdPrompt);
 
-    // Save TRD
-    const trdPath = `TRD_frontend_${task.id}.md`;
+    // Save TRD under .arcclaw/data/artifacts
+    const arcclawHome = this.config.paths.arcclawHome;
+    const trdPath = `${arcclawHome}/data/artifacts/frontend/TRD_${task.id}.md`;
     const fileWriter = this.toolRegistry.get('file_writer');
     if (fileWriter) {
       await fileWriter.execute({
@@ -96,8 +101,13 @@ Based on the task and TRD, implement the frontend code:
 **Description**: ${task.description}
 **TRD**: ${trdResponse}
 
-Create the necessary React/TypeScript components and files.
-Write clean, well-typed, production-ready code.
+IMPORTANT:
+- Use the SAME framework, UI library, and patterns as the existing project
+- Place files in the CORRECT existing directories (do NOT create new top-level dirs)
+- Reuse existing components, hooks, and utilities
+- Follow the project's naming conventions, styling approach, and coding style
+- Use file_reader to read existing related components before writing new ones
+- Output code blocks with correct file paths (e.g. // File: src/components/LoginForm.tsx)
 `;
 
     const codeResponse = await this.think(codePrompt);
@@ -197,23 +207,25 @@ Write clean, well-typed, production-ready code.
 
       if (filePath && code) {
         await fileWriter.execute({
-          file_path: `frontend/${taskId}/${filePath}`,
+          file_path: filePath,
           content: code,
           overwrite: true,
         });
-        await this.taskStore.addArtifact(taskId, `frontend/${taskId}/${filePath}`);
+        await this.taskStore.addArtifact(taskId, filePath);
         fileCount++;
       }
     }
 
     // If no file blocks found, save the entire response as a single file
     if (fileCount === 0 && response.length > 100) {
+      const arcclawHome = this.config.paths.arcclawHome;
+      const artifactPath = `${arcclawHome}/data/artifacts/frontend/${taskId}/implementation.md`;
       await fileWriter.execute({
-        file_path: `frontend/${taskId}/implementation.tsx`,
+        file_path: artifactPath,
         content: response,
         overwrite: true,
       });
-      await this.taskStore.addArtifact(taskId, `frontend/${taskId}/implementation.tsx`);
+      await this.taskStore.addArtifact(taskId, artifactPath);
     }
   }
 }
