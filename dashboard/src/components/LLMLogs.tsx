@@ -63,6 +63,12 @@ export default function LLMLogs() {
     return { totalTokens, totalInputTokens, totalOutputTokens, avgDuration, errorCount };
   }, [entries]);
 
+  // Sort by timestamp descending (newest first)
+  const sortedEntries = useMemo(
+    () => [...entries].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+    [entries],
+  );
+
   return (
     <div className="space-y-5">
       {/* Stats bar */}
@@ -116,7 +122,7 @@ export default function LLMLogs() {
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => {
+                {sortedEntries.map((entry) => {
                   const agent = AGENT_LABELS[entry.agent_id] || { label: entry.agent_id, color: 'bg-muted text-muted-fg' };
                   const isExpanded = expandedId === entry.id;
                   const isError = !!entry.error;
