@@ -54,8 +54,8 @@ USAGE
   arcclaw [command] [options]
 
 COMMANDS
-  start              Start ArcClaw (default if no command given)
-  dashboard          Start the dashboard (requires ArcClaw API running)
+  start              Start API server + Dashboard (default if no command given)
+  dashboard          Start only the Dashboard (requires API server running)
   init               Create .arcclaw/.env configuration file
   providers          List registered LLM providers
   help               Show this help message
@@ -66,6 +66,7 @@ OPTIONS
   --port <number>    Override API port
   --provider <name>  Override LLM provider
   --model <name>     Override LLM model
+  --no-dashboard     Start API server only (skip Dashboard)
 
 ENVIRONMENT
   ArcClaw reads configuration from .arcclaw/.env.
@@ -125,28 +126,21 @@ DASHBOARD_PORT=5173
   console.log('Edit this file to configure your LLM provider and API keys.');
 }
 
-async function dashboardCommand(args: string[]): Promise<void> {
-  console.log(`\n  🎛️  arcclaw dashboard v${VERSION}`);
-
-  const portStr = getArgValue(args, '--port', '-p');
-  const apiPortStr = getArgValue(args, '--api-port');
-
-  const dashboardPort = portStr
-    ? parseInt(portStr, 10)
-    : parseInt(process.env.DASHBOARD_PORT || '5173', 10);
-  const apiPort = apiPortStr
-    ? parseInt(apiPortStr, 10)
-    : parseInt(process.env.API_PORT || '3000', 10);
-  const apiHost = process.env.API_HOST || 'localhost';
-
-  // Resolve dashboard dist path relative to this module
+/**
+ * Start the dashboard Express server (proxy + static files).
+ * Returns a close function for graceful shutdown.
+ */
+async function startDashboardServer(
+  dashboardPort: number,
+  apiPort: number,
+  apiHost: string,
+): Promise<{ close: () => void }> {
   const pkgDir = path.dirname(fileURLToPath(import.meta.url));
   const dashboardDist = path.join(pkgDir, '..', 'dashboard', 'dist');
 
   if (!fs.existsSync(dashboardDist)) {
-    console.error(`Dashboard build not found at ${dashboardDist}`);
-    console.error('Run "npm run build:dashboard" first or clone the full repo.');
-    process.exit(1);
+    logger.warn('Dashboard build not found, skipping dashboard. Run "npm run build:dashboard" first.');
+    return { close: () => {} };
   }
 
   const { default: express } = await import('express');
@@ -196,14 +190,33 @@ async function dashboardCommand(args: string[]): Promise<void> {
     }
   });
 
-  app.listen(dashboardPort, () => {
-    logger.info(
-      { dashboardPort, apiHost, apiPort },
-      `Dashboard ready at http://localhost:${dashboardPort} → /api → ${apiHost}:${apiPort}`,
-    );
-    console.log(`\n  🎛️  Dashboard: http://localhost:${dashboardPort}`);
-    console.log(`  🔗 API proxy: /api → http://${apiHost}:${apiPort}\n`);
+  return new Promise((resolve) => {
+    const server = app.listen(dashboardPort, () => {
+      logger.info(
+        { dashboardPort, apiHost, apiPort },
+        `Dashboard ready at http://localhost:${dashboardPort}`,
+      );
+      console.log(`  🎛️  Dashboard: http://localhost:${dashboardPort}`);
+      resolve({ close: () => server.close() });
+    });
   });
+}
+
+async function dashboardCommand(args: string[]): Promise<void> {
+  console.log(`\n  🎛️  arcclaw dashboard v${VERSION}`);
+
+  const portStr = getArgValue(args, '--port', '-p');
+  const apiPortStr = getArgValue(args, '--api-port');
+
+  const dashboardPort = portStr
+    ? parseInt(portStr, 10)
+    : parseInt(process.env.DASHBOARD_PORT || '5173', 10);
+  const apiPort = apiPortStr
+    ? parseInt(apiPortStr, 10)
+    : parseInt(process.env.API_PORT || '3000', 10);
+  const apiHost = process.env.API_HOST || 'localhost';
+
+  await startDashboardServer(dashboardPort, apiPort, apiHost);
 }
 
 async function startCommand(args: string[]): Promise<void> {
@@ -213,6 +226,7 @@ async function startCommand(args: string[]): Promise<void> {
   const portStr = getArgValue(args, '--port', '-p');
   const provider = getArgValue(args, '--provider');
   const model = getArgValue(args, '--model');
+  const noDashboard = hasFlag(args, '--no-dashboard');
 
   const overrides: any = {};
   if (portStr || provider || model) {
@@ -227,9 +241,12 @@ async function startCommand(args: string[]): Promise<void> {
     configPath,
   });
 
+  let dashboardServer: { close: () => void } | null = null;
+
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'Shutting down...');
+    if (dashboardServer) dashboardServer.close();
     await app.stop();
     process.exit(0);
   };
@@ -241,6 +258,19 @@ async function startCommand(args: string[]): Promise<void> {
   });
 
   await app.start();
+
+  // Start dashboard alongside the API server
+  if (!noDashboard) {
+    const config = app.getConfig();
+    const apiPort = config.api.port;
+    const apiHost = config.api.host;
+    const dashboardPort = config.dashboard.port;
+
+    dashboardServer = await startDashboardServer(dashboardPort, apiPort, apiHost);
+
+    console.log(`  🔗 API:       http://localhost:${apiPort}/api/health`);
+    console.log(`  🎛️  Dashboard: http://localhost:${dashboardPort}\n`);
+  }
 }
 
 // ---------------------------------------------------------------------------
