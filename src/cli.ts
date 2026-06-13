@@ -144,7 +144,7 @@ async function dashboardCommand(args: string[]): Promise<void> {
     const options: http.RequestOptions = {
       hostname: apiHost === '0.0.0.0' ? '127.0.0.1' : apiHost,
       port: apiPort,
-      path: req.url,
+      path: '/api' + req.url,
       method: req.method,
       headers,
     };

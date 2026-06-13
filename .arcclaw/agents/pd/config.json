@@ -1,0 +1,13 @@
+{
+  "id": "pd",
+  "displayName": "PD Agent (Product Manager)",
+  "description": "Handles requirement analysis, PRD generation, and user stories",
+  "modelTier": "fast",
+  "allowedTools": [
+    "file_writer",
+    "file_reader",
+    "code_search"
+  ],
+  "systemPromptSource": "system-prompt.md",
+  "enabled": true
+}

@@ -1,0 +1,15 @@
+{
+  "id": "backend",
+  "displayName": "Backend Agent",
+  "description": "Creates RESTful APIs, business logic, and database schemas",
+  "modelTier": "fast",
+  "allowedTools": [
+    "bash_executor",
+    "file_writer",
+    "file_editor",
+    "file_reader",
+    "code_search"
+  ],
+  "systemPromptSource": "system-prompt.md",
+  "enabled": true
+}

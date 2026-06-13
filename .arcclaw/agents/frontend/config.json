@@ -1,0 +1,15 @@
+{
+  "id": "frontend",
+  "displayName": "Frontend Agent",
+  "description": "Builds React/TypeScript UI components and responsive interfaces",
+  "modelTier": "fast",
+  "allowedTools": [
+    "bash_executor",
+    "file_writer",
+    "file_editor",
+    "file_reader",
+    "code_search"
+  ],
+  "systemPromptSource": "system-prompt.md",
+  "enabled": true
+}

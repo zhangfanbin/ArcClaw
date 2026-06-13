@@ -1,0 +1,14 @@
+{
+  "id": "qa",
+  "displayName": "QA Agent (Test Engineer)",
+  "description": "Creates test plans, writes test cases, and performs quality assessments",
+  "modelTier": "fast",
+  "allowedTools": [
+    "bash_executor",
+    "file_writer",
+    "file_reader",
+    "code_search"
+  ],
+  "systemPromptSource": "system-prompt.md",
+  "enabled": true
+}
