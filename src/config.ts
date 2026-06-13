@@ -22,6 +22,7 @@ export interface AppConfig {
     dataDir: string;
     workspaceDir: string;
     promptsDir: string;
+    arcclawHome: string;
   };
   api: {
     port: number;
@@ -90,6 +91,7 @@ function getDefaultPromptsDir(): string {
 // ---------------------------------------------------------------------------
 
 function getDefaults(): AppConfig {
+  const arcclawHome = process.env.ARCCLAW_HOME || '.arcclaw';
   return {
     llm: {
       provider: 'openai' as LLMProviderName,
@@ -104,9 +106,10 @@ function getDefaults(): AppConfig {
       concurrentTasks: 1,
     },
     paths: {
-      dataDir: './data',
-      workspaceDir: './workspaces',
+      dataDir: path.join(arcclawHome, 'data'),
+      workspaceDir: arcclawHome,
       promptsDir: getDefaultPromptsDir(),
+      arcclawHome,
     },
     api: { port: 3000, host: '0.0.0.0' },
     dashboard: { port: 5173 },
@@ -167,6 +170,8 @@ function loadFromEnv(): Partial<AppConfig> {
       break;
   }
 
+  const arcclawHome = process.env.ARCCLAW_HOME || '.arcclaw';
+
   return {
     llm: {
       provider,
@@ -188,9 +193,10 @@ function loadFromEnv(): Partial<AppConfig> {
       concurrentTasks: getEnvInt('AGENT_CONCURRENT_TASKS', 1),
     },
     paths: {
-      dataDir: getEnv('DATA_DIR', './data'),
-      workspaceDir: getEnv('WORKSPACE_DIR', './workspaces'),
+      dataDir: getEnv('DATA_DIR', path.join(arcclawHome, 'data')),
+      workspaceDir: getEnv('WORKSPACE_DIR', arcclawHome),
       promptsDir: getEnv('PROMPTS_DIR', getDefaultPromptsDir()),
+      arcclawHome,
     },
     api: {
       port: getEnvInt('API_PORT', 3000),

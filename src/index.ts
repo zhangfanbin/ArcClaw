@@ -168,6 +168,7 @@ export type { BootstrapResult } from './bootstrap.js';
 export { BaseAgent } from './agent/base-agent.js';
 export { AgentRunner } from './agent/agent-runner.js';
 export { ContextWindow } from './agent/context-window.js';
+export { ConfigurableAgent } from './agent/agents/configurable-agent.js';
 
 // Task board
 export { TaskStore } from './task-board/task-store.js';
@@ -181,7 +182,7 @@ export { MessageStore } from './messaging/message-store.js';
 
 // Tools
 export { ToolRegistry } from './tools/tool-registry.js';
-export { hasPermission, getAllowedTools, TOOL_PERMISSIONS } from './tools/permissions.js';
+export { hasPermission, getAllowedTools, TOOL_PERMISSIONS, registerPermissions, getToolPermissionsSnapshot } from './tools/permissions.js';
 
 // LLM
 export { createModel, callLLMWithRetry, registerBuiltinProviders } from './llm/provider-factory.js';
@@ -193,7 +194,9 @@ export { createApiServer, SSEBroadcaster } from './api/index.js';
 
 // Types
 export type { LLMProviderDefinition, LLMConfig, LLMProviderName, BuiltinProviderName, ChatMessage, ToolCall, ToolDefinition, LLMLogEntry } from './types/llm.js';
-export type { AgentId, AgentState, AgentStatus } from './types/agent.js';
+export type { AgentId, BuiltinAgentId, DefaultAgentId, AgentState, AgentStatus } from './types/agent.js';
+export { BUILTIN_AGENT_IDS, DEFAULT_AGENT_IDS, ALL_AGENT_IDS, AGENT_DISPLAY_NAMES, getRegisteredAgentIds, registerAgentId, updateDisplayName } from './types/agent.js';
+export type { AgentRoleConfig } from './types/agent-config.js';
 export type { Task, TaskStatus, TaskPriority, Requirement, CreateTaskInput } from './types/task.js';
 export type { AgentMessage } from './types/message.js';
 export type { Tool, ToolOutput } from './types/tool.js';

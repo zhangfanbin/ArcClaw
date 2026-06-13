@@ -10,7 +10,8 @@ export type TaskStatus =
 
 export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';
 
-export type TaskAssigneeType = 'team_leader' | 'pd' | 'frontend' | 'backend' | 'qa';
+/** Reuse AgentId directly — includes built-in, default, and runtime-registered custom agents. */
+export type TaskAssigneeType = AgentId;
 
 export interface StatusChange {
   from: TaskStatus;

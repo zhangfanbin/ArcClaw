@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Task } from '../../types/task.js';
 import type { AgentMessage } from '../../types/message.js';
 import type { AppConfig } from '../../config.js';
+import type { AgentRoleConfig } from '../../types/agent-config.js';
 import { TaskStore } from '../../task-board/task-store.js';
 import { MessageBus } from '../../messaging/message-bus.js';
 import { ToolRegistry } from '../../tools/tool-registry.js';
@@ -12,24 +13,40 @@ import { createLogger } from '../../utils/logger.js';
 const logger = createLogger('qa-agent');
 
 export class QaAgent extends BaseAgent {
+  private roleConfig?: AgentRoleConfig;
+
   constructor(
     config: AppConfig,
     taskStore: TaskStore,
     messageBus: MessageBus,
-    toolRegistry: ToolRegistry
+    toolRegistry: ToolRegistry,
+    roleConfig?: AgentRoleConfig,
   ) {
     super('qa', config, taskStore, messageBus, toolRegistry);
+    this.roleConfig = roleConfig;
   }
 
-  getModelTier(): 'fast' {
-    return 'fast';
+  getModelTier(): 'powerful' | 'fast' {
+    return this.roleConfig?.modelTier ?? 'fast';
   }
 
   async getSystemPrompt(): Promise<string> {
+    // 1. Try .arcclaw/agents/qa/{systemPromptSource}
+    if (this.roleConfig?.systemPromptSource) {
+      const arcclawPromptPath = path.join(
+        this.config.paths.arcclawHome, 'agents', 'qa', this.roleConfig.systemPromptSource,
+      );
+      try {
+        return await fs.readFile(arcclawPromptPath, 'utf-8');
+      } catch { /* fall through */ }
+    }
+
+    // 2. Try shipped prompts/ directory
     const promptPath = path.join(this.config.paths.promptsDir, 'qa-agent.system.md');
     try {
       return await fs.readFile(promptPath, 'utf-8');
     } catch {
+      // 3. Inline fallback
       return `You are the QA Engineer agent. You specialize in:
 1. Creating test plans from PRDs and TRDs
 2. Writing test cases with expected outcomes

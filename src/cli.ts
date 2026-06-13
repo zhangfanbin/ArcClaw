@@ -98,9 +98,13 @@ API_PORT=3000
 API_HOST=0.0.0.0
 DASHBOARD_PORT=5173
 
-# Paths (relative to CWD)
-DATA_DIR=./data
-WORKSPACE_DIR=./workspaces
+# Runtime directory (default: .arcclaw)
+# All runtime data (tasks, messages, llm-logs, agent configs) lives under this directory.
+# ARCCLAW_HOME=.arcclaw
+
+# Legacy path overrides (prefer ARCCLAW_HOME instead)
+# DATA_DIR=.arcclaw/data
+# WORKSPACE_DIR=.arcclaw
 # PROMPTS_DIR=./prompts   # override to use custom prompts
 `);
 }
