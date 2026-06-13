@@ -12,7 +12,18 @@ import { createLogger } from './utils/logger.js';
 
 const logger = createLogger('cli');
 
-const VERSION = '0.1.0';
+function getVersion(): string {
+  try {
+    const cliDir = path.dirname(fileURLToPath(import.meta.url));
+    const pkgPath = path.join(cliDir, '..', 'package.json');
+    const raw = fs.readFileSync(pkgPath, 'utf-8');
+    return JSON.parse(raw).version || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+const VERSION = getVersion();
 
 // ---------------------------------------------------------------------------
 // Arg helpers
@@ -110,6 +121,8 @@ DASHBOARD_PORT=5173
 }
 
 async function dashboardCommand(args: string[]): Promise<void> {
+  console.log(`\n  🎛️  arcclaw dashboard v${VERSION}`);
+
   const portStr = getArgValue(args, '--port', '-p');
   const apiPortStr = getArgValue(args, '--api-port');
 
@@ -189,6 +202,8 @@ async function dashboardCommand(args: string[]): Promise<void> {
 }
 
 async function startCommand(args: string[]): Promise<void> {
+  console.log(`\n  🚀 arcclaw v${VERSION}\n`);
+
   const configPath = getArgValue(args, '--config', '-c');
   const portStr = getArgValue(args, '--port', '-p');
   const provider = getArgValue(args, '--provider');
