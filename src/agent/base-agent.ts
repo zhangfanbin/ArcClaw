@@ -30,6 +30,7 @@ export abstract class BaseAgent {
   protected status: AgentStatus;
   protected running: boolean = false;
   protected currentRequirementId: string | null = null;
+  private processingTasks: Set<string> = new Set();
   private unsubscribers: Array<() => void> = [];
 
   constructor(
@@ -111,7 +112,7 @@ export abstract class BaseAgent {
 
     // Subscribe to task assignments
     const taskCreatedHandler = async (task: Task) => {
-      if (task.assignee === this.id && this.running) {
+      if (task.assignee === this.id && this.running && !this.processingTasks.has(task.id)) {
         await this.handleTask(task);
       }
     };
@@ -121,7 +122,7 @@ export abstract class BaseAgent {
     // Subscribe to task status changes (for monitoring)
     const statusChangedHandler = async (task: Task, _oldStatus: any, newStatus: any) => {
       if (task.assignee === this.id && newStatus === 'in_progress') {
-        if (this.status.state === 'idle') {
+        if (this.status.state === 'idle' && !this.processingTasks.has(task.id)) {
           await this.handleTask(task);
         }
       }
@@ -217,7 +218,8 @@ export abstract class BaseAgent {
    */
   protected async think(
     userPrompt: string,
-    maxSteps?: number
+    maxSteps?: number,
+    _isRecovery: boolean = false,
   ): Promise<string> {
     this.context.addMessage({ role: 'user', content: userPrompt });
     this.context.trimToBudget();
@@ -318,29 +320,27 @@ export abstract class BaseAgent {
         errorMsg.includes('Invalid arguments for tool') ||
         errorMsg.includes('unexpected end of JSON');
 
-      if (isTruncatedToolCall) {
-        // Don't mark as error — give the LLM a chance to recover
+      if (isTruncatedToolCall && !_isRecovery) {
+        // Auto-retry: add recovery instructions and call think() again
         logger.warn(
           { agentId: this.id, error: errorMsg.slice(0, 200) },
-          'Tool call arguments truncated (output token limit). Instructing agent to split writes.',
+          'Tool call truncated. Auto-retrying with split-write instructions.',
         );
 
         this.context.addMessage({
           role: 'assistant',
           content: '[Tool call failed: output was too long and got truncated.]',
         });
-        this.context.addMessage({
-          role: 'user',
-          content:
-            'ERROR: Your previous tool call had content that was too long and got truncated. ' +
-            'You MUST split large file writes into smaller sections. ' +
-            'Write the FIRST section of the file now (keep each write under 3000 characters of content). ' +
-            'After this succeeds, use file_editor to append the remaining sections incrementally.',
-        });
 
-        this.status.state = 'idle';
-        this.status.last_activity = new Date().toISOString();
-        return ''; // Return empty — the context now has recovery instructions for next think() call
+        // Retry with recovery instructions (pass _isRecovery=true to prevent infinite loop)
+        return this.think(
+          'ERROR: Your previous tool call had content that was too long and got truncated. ' +
+          'You MUST split large file writes into smaller sections. ' +
+          'Write the FIRST section of the file now (keep each write under 3000 characters of content). ' +
+          'After this succeeds, use file_writer with append=true to add the remaining sections incrementally.',
+          maxSteps,
+          true,
+        );
       }
 
       this.status.state = 'error';
@@ -392,6 +392,10 @@ export abstract class BaseAgent {
    * Handle an incoming task.
    */
   private async handleTask(task: Task): Promise<void> {
+    // Prevent duplicate processing
+    if (this.processingTasks.has(task.id)) return;
+    this.processingTasks.add(task.id);
+
     this.status.current_task_id = task.id;
     this.currentRequirementId = task.requirement_id;
     this.status.state = 'thinking';
@@ -404,6 +408,7 @@ export abstract class BaseAgent {
       this.status.error = error.message;
       logger.error({ agentId: this.id, taskId: task.id, error: error.message }, 'Task handling failed');
     } finally {
+      this.processingTasks.delete(task.id);
       this.status.current_task_id = null;
       if (this.status.state !== 'error') {
         this.status.state = 'idle';

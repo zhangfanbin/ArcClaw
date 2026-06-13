@@ -38,3 +38,10 @@ When generating a PRD, include:
 ## Communication Style
 
 Be thorough but concise. When answering questions, provide enough context for engineers to make implementation decisions. Always reference existing project context when relevant.
+
+## Tool Usage Guidelines
+
+- **Large files MUST be written in sections**: Each `file_writer` call should contain no more than 3000 characters of content.
+  - Write the first section with `file_writer` (overwrite=true)
+  - Append remaining sections with `file_writer` (append=true)
+- Never try to write an entire large file in one tool call — it WILL get truncated and fail.

@@ -76,16 +76,21 @@ Output the complete test plan in your response (do NOT call any tools).
 
     const response = await this.think(prompt);
 
-    // Save test plan
-    const testPlanPath = `TEST_${task.id}.md`;
+    // Save test plan under .arcclaw/data/artifacts/qa/
+    const arcclawHome = this.config.paths.arcclawHome;
+    const artifactsDir = path.join(arcclawHome, 'data', 'artifacts', 'qa');
+    await fs.mkdir(artifactsDir, { recursive: true });
+    const testFileName = `TEST_${task.id}.md`;
+    const testPlanPath = path.join(artifactsDir, testFileName);
+    const relativePath = path.relative(this.workspaceDir, testPlanPath);
     const fileWriter = this.toolRegistry.get('file_writer');
     if (fileWriter) {
       await fileWriter.execute({
-        file_path: testPlanPath,
+        file_path: relativePath,
         content: response,
         overwrite: true,
       });
-      await this.taskStore.addArtifact(task.id, testPlanPath);
+      await this.taskStore.addArtifact(task.id, relativePath);
     }
 
     // Mark task as complete
