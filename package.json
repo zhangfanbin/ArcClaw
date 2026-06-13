@@ -1,6 +1,6 @@
 {
   "name": "arcclaw",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Multi-agent AI collaboration platform for end-to-end software delivery",
   "type": "module",
   "main": "dist/index.js",
