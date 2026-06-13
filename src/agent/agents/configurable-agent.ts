@@ -116,20 +116,21 @@ If your work produces any artifacts or deliverables, describe them clearly.
       const code = match[2].trim();
 
       if (filePath && code) {
-        const fullPath = `${this.id}/${taskId}/${filePath}`;
+        // Write directly to the project workspace using the LLM-specified path
         await fileWriter.execute({
-          file_path: fullPath,
+          file_path: filePath,
           content: code,
           overwrite: true,
         });
-        await this.taskStore.addArtifact(taskId, fullPath);
+        await this.taskStore.addArtifact(taskId, filePath);
         fileCount++;
       }
     }
 
-    // If no file blocks found but response is substantial, save as a single artifact
+    // If no file blocks found but response is substantial, save under .arcclaw/data/artifacts
     if (fileCount === 0 && response.length > 100) {
-      const artifactPath = `${this.id}/${taskId}/output.md`;
+      const arcclawHome = this.config.paths.arcclawHome;
+      const artifactPath = `${arcclawHome}/data/artifacts/${this.id}/${taskId}/output.md`;
       await fileWriter.execute({
         file_path: artifactPath,
         content: response,

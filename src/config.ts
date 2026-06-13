@@ -107,7 +107,7 @@ function getDefaults(): AppConfig {
     },
     paths: {
       dataDir: path.join(arcclawHome, 'data'),
-      workspaceDir: arcclawHome,
+      workspaceDir: process.cwd(),
       promptsDir: getDefaultPromptsDir(),
       arcclawHome,
     },
@@ -194,7 +194,7 @@ function loadFromEnv(): Partial<AppConfig> {
     },
     paths: {
       dataDir: getEnv('DATA_DIR', path.join(arcclawHome, 'data')),
-      workspaceDir: getEnv('WORKSPACE_DIR', arcclawHome),
+      workspaceDir: getEnv('WORKSPACE_DIR', process.cwd()),
       promptsDir: getEnv('PROMPTS_DIR', getDefaultPromptsDir()),
       arcclawHome,
     },

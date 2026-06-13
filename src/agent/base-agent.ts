@@ -44,7 +44,7 @@ export abstract class BaseAgent {
     this.taskStore = taskStore;
     this.messageBus = messageBus;
     this.toolRegistry = toolRegistry;
-    this.workspaceDir = path.join(config.paths.workspaceDir, id);
+    this.workspaceDir = config.paths.workspaceDir;
 
     this.context = new ContextWindow({
       tokenBudget: config.agents.contextTokenBudget,

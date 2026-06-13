@@ -75,7 +75,9 @@ export async function bootstrap(config: AppConfig): Promise<BootstrapResult> {
   setAuditDir(runtimePaths.auditDir);
 
   const dataDir = runtimePaths.dataDir;
-  const workspaceDir = runtimePaths.arcclawHome;
+  const workspaceDir = config.paths.workspaceDir;
+
+  logger.info({ workspaceDir, arcclawHome: runtimePaths.arcclawHome }, 'Runtime paths');
 
   // Task Board
   const taskStore = new TaskStore(dataDir);
